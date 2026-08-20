@@ -16,7 +16,8 @@ tar tzf "$SRC" >/dev/null
 rm -f "$DIST/$PKG.tar.gz"
 
 docker run --rm \
-  -e JQ_VERSION -e PKG \
+  -e JQ_VERSION="$JQ_VERSION" \
+  -e PKG="$PKG" \
   -v "$CACHE:/src:ro" \
   -v "$DIST:/dist" \
   centos:7 bash -euxo pipefail -c '
