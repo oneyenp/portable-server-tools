@@ -32,7 +32,6 @@ permissions:
 jobs:
   build:
     name: ${{ matrix.tool }} / ${{ matrix.target }}
-    if: github.event_name != 'workflow_dispatch' || inputs.tool == 'all' || inputs.tool == matrix.tool
     strategy:
       fail-fast: false
       matrix:
@@ -49,12 +48,15 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build
+        if: github.event_name != 'workflow_dispatch' || inputs.tool == 'all' || inputs.tool == matrix.tool
         run: bash ./scripts/build-tool.sh "${{ matrix.tool }}" "${{ matrix.target }}"
 
       - name: List artifacts
+        if: github.event_name != 'workflow_dispatch' || inputs.tool == 'all' || inputs.tool == matrix.tool
         run: ls -lh dist/
 
       - name: Upload artifact
+        if: github.event_name != 'workflow_dispatch' || inputs.tool == 'all' || inputs.tool == matrix.tool
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.tool }}-${{ matrix.target }}
