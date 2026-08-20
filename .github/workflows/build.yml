@@ -8,6 +8,11 @@ on:
       - '.github/workflows/build.yml'
       - 'scripts/**'
       - 'tools/**'
+  pull_request:
+    paths:
+      - '.github/workflows/build.yml'
+      - 'scripts/**'
+      - 'tools/**'
   workflow_dispatch:
     inputs:
       tool:
@@ -20,45 +25,61 @@ on:
           - tmux
           - jq
           - neovim
-  pull_request:
-    paths:
-      - '.github/workflows/build.yml'
-      - 'scripts/**'
-      - 'tools/**'
 
 permissions:
   contents: read
 
 jobs:
-  build:
-    name: ${{ matrix.tool }} / ${{ matrix.target }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - tool: tmux
-            target: el7-amd64
-          - tool: jq
-            target: el7-amd64
-          - tool: neovim
-            target: el7-amd64
+  tmux:
+    name: tmux / el7-amd64
+    if: github.event_name != 'workflow_dispatch' || inputs.tool == 'all' || inputs.tool == 'tmux'
     runs-on: ubuntu-latest
-
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-
-      - name: Build
-        if: github.event_name != 'workflow_dispatch' || inputs.tool == 'all' || inputs.tool == matrix.tool
-        run: bash ./scripts/build-tool.sh "${{ matrix.tool }}" "${{ matrix.target }}"
-
-      - name: List artifacts
-        if: github.event_name != 'workflow_dispatch' || inputs.tool == 'all' || inputs.tool == matrix.tool
-        run: ls -lh dist/
-
+      - name: Build tmux
+        run: bash ./scripts/build-tool.sh tmux el7-amd64
+      - name: Verify artifact
+        run: test -s dist/tmux-3.7b-el7-amd64.tar.gz && tar tzf dist/tmux-3.7b-el7-amd64.tar.gz >/dev/null
       - name: Upload artifact
-        if: github.event_name != 'workflow_dispatch' || inputs.tool == 'all' || inputs.tool == matrix.tool
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.tool }}-${{ matrix.target }}
-          path: dist/*.tar.gz
+          name: tmux-el7-amd64
+          path: dist/tmux-3.7b-el7-amd64.tar.gz
+          if-no-files-found: error
+
+  jq:
+    name: jq / el7-amd64
+    if: github.event_name != 'workflow_dispatch' || inputs.tool == 'all' || inputs.tool == 'jq'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build jq
+        run: bash ./scripts/build-tool.sh jq el7-amd64
+      - name: Verify artifact
+        run: test -s dist/jq-1.8.2-el7-amd64.tar.gz && tar tzf dist/jq-1.8.2-el7-amd64.tar.gz >/dev/null
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jq-el7-amd64
+          path: dist/jq-1.8.2-el7-amd64.tar.gz
+          if-no-files-found: error
+
+  neovim:
+    name: neovim / el7-amd64
+    if: github.event_name != 'workflow_dispatch' || inputs.tool == 'all' || inputs.tool == 'neovim'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Neovim
+        run: bash ./scripts/build-tool.sh neovim el7-amd64
+      - name: Verify artifact
+        run: test -s dist/neovim-0.12.4-el7-amd64.tar.gz && tar tzf dist/neovim-0.12.4-el7-amd64.tar.gz >/dev/null
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: neovim-el7-amd64
+          path: dist/neovim-0.12.4-el7-amd64.tar.gz
           if-no-files-found: error
