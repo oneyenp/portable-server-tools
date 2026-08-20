@@ -26,7 +26,7 @@ docker run --rm \
     sed -i "s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" /etc/yum.repos.d/CentOS-Base.repo
     yum clean all
     yum makecache
-    yum install -y gcc gcc-c++ make autoconf automake libtool tar gzip
+    yum install -y gcc gcc-c++ make autoconf automake libtool glibc-static tar gzip
 
     mkdir -p /build /opt/jq
     cd /build
