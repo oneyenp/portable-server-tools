@@ -47,6 +47,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Keep the selection logic at step level because jobs.<job_id>.if is
+      # evaluated before strategy.matrix is expanded.
       - name: Build
         if: github.event_name != 'workflow_dispatch' || inputs.tool == 'all' || inputs.tool == matrix.tool
         run: bash ./scripts/build-tool.sh "${{ matrix.tool }}" "${{ matrix.target }}"
