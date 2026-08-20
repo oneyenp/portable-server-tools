@@ -21,6 +21,7 @@ docker run --rm \
   -v "$CACHE:/src:ro" \
   -v "$DIST:/dist" \
   centos:7 bash -euxo pipefail -c '
+    export LC_ALL=C
     sed -i "s/mirrorlist/#mirrorlist/g" /etc/yum.repos.d/CentOS-Base.repo
     sed -i "s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" /etc/yum.repos.d/CentOS-Base.repo
     yum clean all
@@ -31,23 +32,37 @@ docker run --rm \
     cd /build
     tar xzf /src/jq.tar.gz
     cd jq-${JQ_VERSION}
-    ./configure --prefix=/opt/jq --disable-docs --with-oniguruma=builtin --enable-static --enable-all-static
+
+    ./configure \
+      --prefix=/opt/jq \
+      --disable-docs \
+      --with-oniguruma=builtin \
+      --enable-static \
+      --enable-all-static
     make -j"$(nproc)" LDFLAGS=-all-static
-    make check
+    make check VERBOSE=yes
     make install-strip
 
     /opt/jq/bin/jq --version
-    if ldd /opt/jq/bin/jq 2>&1 | grep -q "not a dynamic executable"; then
-      echo "jq is statically linked"
-    else
-      echo "jq static-link verification failed" >&2
-      ldd /opt/jq/bin/jq || true
-      exit 1
-    fi
+    printf "%s\n" "{\"value\":42}" | /opt/jq/bin/jq -e ".value == 42" >/dev/null
+
+    ldd_output="$(ldd /opt/jq/bin/jq 2>&1 || true)"
+    case "$ldd_output" in
+      *"not a dynamic executable"*|*"statically linked"*)
+        echo "jq is statically linked"
+        ;;
+      *)
+        echo "jq static-link verification failed" >&2
+        echo "$ldd_output" >&2
+        exit 1
+        ;;
+    esac
 
     mkdir -p "/package/${PKG}"
     cp -a /opt/jq/. "/package/${PKG}/"
     tar -C /package -czf "/dist/${PKG}.tar.gz" "$PKG"
   '
 
+test -s "$DIST/$PKG.tar.gz"
+tar tzf "$DIST/$PKG.tar.gz" >/dev/null
 echo "$DIST/$PKG.tar.gz"
