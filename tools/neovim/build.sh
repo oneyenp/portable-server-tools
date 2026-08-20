@@ -16,7 +16,8 @@ tar tzf "$SRC" >/dev/null
 rm -f "$DIST/$PKG.tar.gz"
 
 docker run --rm \
-  -e NVIM_VERSION -e PKG \
+  -e NVIM_VERSION="$NVIM_VERSION" \
+  -e PKG="$PKG" \
   -v "$CACHE:/src:ro" \
   -v "$DIST:/dist" \
   quay.io/pypa/manylinux2014_x86_64 bash -euxo pipefail -c '
