@@ -26,7 +26,10 @@ fetch "https://github.com/tmux/tmux/releases/download/${TMUX_VERSION}/tmux-${TMU
 rm -f "$DIST/$PKG.tar.gz"
 
 docker run --rm \
-  -e TMUX_VERSION -e NCURSES_VERSION -e LIBEVENT_VERSION -e PKG \
+  -e TMUX_VERSION="$TMUX_VERSION" \
+  -e NCURSES_VERSION="$NCURSES_VERSION" \
+  -e LIBEVENT_VERSION="$LIBEVENT_VERSION" \
+  -e PKG="$PKG" \
   -v "$CACHE:/src:ro" \
   -v "$DIST:/dist" \
   centos:7 bash -euxo pipefail -c '
