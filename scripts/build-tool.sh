@@ -16,4 +16,4 @@ if [[ "$TARGET" != "el7-amd64" ]]; then
 fi
 
 mkdir -p "$ROOT/.cache" "$ROOT/dist"
-exec "$ROOT/tools/$TOOL/build.sh" "$TARGET"
+exec bash "$ROOT/tools/$TOOL/build.sh" "$TARGET"
