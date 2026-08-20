@@ -79,11 +79,22 @@ exec "$ROOT/libexec/tmux.real" "$@"
 WRAP
     chmod +x /opt/tmux/bin/tmux
 
-    /opt/tmux/bin/tmux -V
+    test -x /opt/tmux/bin/tmux
+    test -x /opt/tmux/libexec/tmux.real
     test -d /opt/tmux/share/terminfo
+    find /opt/tmux/share/terminfo -type f | grep -q .
+    /opt/tmux/bin/tmux -V
+
+    export TERM=xterm-256color
+    /opt/tmux/bin/tmux -L portable-ci -f /dev/null new-session -d
+    /opt/tmux/bin/tmux -L portable-ci list-sessions
+    /opt/tmux/bin/tmux -L portable-ci kill-server
+
     mkdir -p "/package/${PKG}"
     cp -a /opt/tmux/. "/package/${PKG}/"
     tar -C /package -czf "/dist/${PKG}.tar.gz" "$PKG"
   '
 
+test -s "$DIST/$PKG.tar.gz"
+tar tzf "$DIST/$PKG.tar.gz" >/dev/null
 echo "$DIST/$PKG.tar.gz"
