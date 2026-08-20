@@ -21,23 +21,48 @@ docker run --rm \
   -v "$CACHE:/src:ro" \
   -v "$DIST:/dist" \
   quay.io/pypa/manylinux2014_x86_64 bash -euxo pipefail -c '
-    yum install -y gcc gcc-c++ make git gettext curl unzip tar gzip
+    export LC_ALL=C
+    yum install -y gcc gcc-c++ make git gettext curl unzip tar gzip patch
     /opt/python/cp311-cp311/bin/pip install --no-cache-dir cmake ninja
     export PATH="/opt/python/cp311-cp311/bin:$PATH"
+
+    cmake --version
+    ninja --version
 
     mkdir -p /build /opt/nvim
     cd /build
     tar xzf /src/neovim.tar.gz
     cd neovim-${NVIM_VERSION}
 
-    make CMAKE_BUILD_TYPE=Release \
-      CMAKE_EXTRA_FLAGS="-DCMAKE_INSTALL_PREFIX=/opt/nvim"
-    make install
+    cmake -S cmake.deps -B .deps -G Ninja \
+      -D CMAKE_BUILD_TYPE=Release
+    cmake --build .deps --parallel "$(nproc)"
 
+    cmake -S . -B build -G Ninja \
+      -D CMAKE_BUILD_TYPE=Release \
+      -D CMAKE_INSTALL_PREFIX=/opt/nvim
+    cmake --build build --parallel "$(nproc)"
+    cmake --install build
+
+    test -x /opt/nvim/bin/nvim
     /opt/nvim/bin/nvim --version | head -n 3
+    /opt/nvim/bin/nvim --headless -u NONE -i NONE "+lua assert(vim.version().major == 0)" +qall
+
+    ldd /opt/nvim/bin/nvim | tee /tmp/nvim.ldd
+    if grep -E "(/build/|/\.deps/)" /tmp/nvim.ldd; then
+      echo "Neovim has build-tree runtime dependencies" >&2
+      exit 1
+    fi
+    if grep -q "not found" /tmp/nvim.ldd; then
+      echo "Neovim has unresolved runtime dependencies" >&2
+      exit 1
+    fi
+
     mkdir -p "/package/${PKG}"
     cp -a /opt/nvim/. "/package/${PKG}/"
     tar -C /package -czf "/dist/${PKG}.tar.gz" "$PKG"
   '
 
+test -s "$DIST/$PKG.tar.gz"
+tar tzf "$DIST/$PKG.tar.gz" >/dev/null
 echo "$DIST/$PKG.tar.gz"
